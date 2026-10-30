@@ -1,0 +1,52 @@
+pipeline {
+
+    agent any
+
+    tools {
+        jdk 'JDK21'
+        maven 'Maven3'
+    }
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Build') {
+            steps {
+                sh 'mvn clean compile'
+            }
+        }
+
+        stage('Unit Testing') {
+            steps {
+                sh 'mvn test'
+            }
+        }
+
+        stage('Package') {
+            steps {
+                sh 'mvn package -DskipTests'
+            }
+        }
+    }
+
+    post {
+        always {
+            junit 'target/surefire-reports/*.xml'
+            archiveArtifacts artifacts: 'target/*.jar',
+                             allowEmptyArchive: true
+        }
+
+        success {
+            echo 'Job Tracker CI Pipeline SUCCESS'
+        }
+
+        failure {
+            echo 'Job Tracker CI Pipeline FAILED'
+        }
+    }
+}
