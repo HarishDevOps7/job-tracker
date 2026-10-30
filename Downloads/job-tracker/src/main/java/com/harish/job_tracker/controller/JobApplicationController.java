@@ -32,4 +32,19 @@ public class JobApplicationController {
     public List<JobApplication> findAll() {
         return service.findAll();
     }
+    @GetMapping("/{id}")
+public JobApplication findById(@PathVariable Long id) {
+    return service.findById(id);
+}
+@PutMapping("/{id}")
+public JobApplication update(
+        @PathVariable Long id,
+        @Valid @RequestBody CreateJobRequest request) {
+    return service.update(id, request);
+}
+@DeleteMapping("/{id}")
+@ResponseStatus(HttpStatus.NO_CONTENT)
+public void delete(@PathVariable Long id) {
+    service.delete(id);
+}
 }
