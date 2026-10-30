@@ -1,52 +1,62 @@
-pipeline {
 
+pipeline {
     agent any
 
-   tools {
-    jdk 'JDK21'
-    maven 'Maven-3.9.11'
-}
+    tools {
+        jdk 'JDK21'
+        maven 'Maven-3.9.11'
+    }
+
+    options {
+        timestamps()
+        disableConcurrentBuilds()
+    }
 
     stages {
 
-        stage('Checkout') {
-            steps {
-                checkout scm
-            }
-        }
-
         stage('Build') {
             steps {
-                sh 'mvn clean compile'
+                dir('Downloads/job-tracker') {
+                    echo 'Building Job Tracker application'
+                    sh 'mvn clean compile'
+                }
             }
         }
 
         stage('Unit Testing') {
             steps {
-                sh 'mvn test'
+                dir('Downloads/job-tracker') {
+                    echo 'Running JUnit and Mockito tests'
+                    sh 'mvn test'
+                }
             }
         }
 
         stage('Package') {
             steps {
-                sh 'mvn package -DskipTests'
+                dir('Downloads/job-tracker') {
+                    echo 'Creating executable JAR'
+                    sh 'mvn package -DskipTests'
+                }
             }
         }
     }
 
     post {
         always {
-            junit 'target/surefire-reports/*.xml'
-            archiveArtifacts artifacts: 'target/*.jar',
+            junit testResults: 'Downloads/job-tracker/target/surefire-reports/*.xml',
+                  allowEmptyResults: true
+
+            archiveArtifacts artifacts: 'Downloads/job-tracker/target/*.jar',
                              allowEmptyArchive: true
         }
 
         success {
-            echo 'Job Tracker CI Pipeline SUCCESS'
+            echo 'JOB TRACKER CI PIPELINE SUCCESS'
         }
 
         failure {
-            echo 'Job Tracker CI Pipeline FAILED'
+            echo 'JOB TRACKER CI PIPELINE FAILED'
         }
     }
 }
