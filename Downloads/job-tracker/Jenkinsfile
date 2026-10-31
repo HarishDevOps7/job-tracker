@@ -5,7 +5,6 @@ pipeline {
     tools {
         jdk 'JDK21'
         maven 'Maven-3.9.11'
-        sonarRunner 'SonarQube-Scanner'
     }
 
     options {
@@ -45,13 +44,23 @@ pipeline {
        stage('SonarCloud Analysis') {
     steps {
         dir('Downloads/job-tracker') {
-            withSonarQubeEnv('SonarQube') {
-                sh '''
-                    echo "Checking SonarScanner..."
-                    which sonar-scanner
-                    sonar-scanner --version
-                    sonar-scanner
-                '''
+            script {
+                def scannerHome = tool 'SonarQube-Scanner'
+
+                withSonarQubeEnv('SonarQube') {
+                    sh """
+                        ${scannerHome}/bin/sonar-scanner \
+                        -Dsonar.organization=sonarqubepractice-c07 \
+                        -Dsonar.projectKey=sonarqubepractice-c07_job-tracker \
+                        -Dsonar.projectName=job-tracker \
+                        -Dsonar.host.url=https://sonarcloud.io \
+                        -Dsonar.sources=src/main/java \
+                        -Dsonar.tests=src/test/java \
+                        -Dsonar.java.binaries=target/classes \
+                        -Dsonar.sourceEncoding=UTF-8 \
+                        -X
+                    """
+                }
             }
         }
     }
