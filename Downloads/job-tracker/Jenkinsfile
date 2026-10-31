@@ -5,6 +5,7 @@ pipeline {
     tools {
         jdk 'JDK21'
         maven 'Maven-3.9.11'
+        sonarRunner 'SonarQube-Scanner'
     }
 
     options {
@@ -44,9 +45,9 @@ pipeline {
         stage('SonarCloud Analysis') {
     steps {
         dir('Downloads/job-tracker') {
-           withSonarQubeEnv('SonarQube') {
-    sh 'sonar-scanner'
-}
+            withSonarQubeEnv('SonarQube') {
+                sh 'sonar-scanner'
+            }
         }
     }
 }
