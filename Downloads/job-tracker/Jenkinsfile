@@ -5,6 +5,7 @@ pipeline {
     tools {
         jdk 'JDK21'
         maven 'Maven-3.9.11'
+        sonarScanner 'SonarScanner'
     }
 
     options {
@@ -40,17 +41,12 @@ pipeline {
                 }
             }
         }
-    }
 
-
-     stage('SonarCloud Analysis') {
+        stage('SonarCloud Analysis') {
             steps {
                 dir('Downloads/job-tracker') {
                     withSonarQubeEnv('SonarCloud') {
-                        sh '''
-                            sonar-scanner \
-                            -Dsonar.token="$SONAR_AUTH_TOKEN"
-                        '''
+                        sh 'sonar-scanner'
                     }
                 }
             }
@@ -67,11 +63,15 @@ pipeline {
 
     post {
         always {
-            junit testResults: 'Downloads/job-tracker/target/surefire-reports/*.xml',
-                  allowEmptyResults: true
+            junit(
+                testResults: 'Downloads/job-tracker/target/surefire-reports/*.xml',
+                allowEmptyResults: true
+            )
 
-            archiveArtifacts artifacts: 'Downloads/job-tracker/target/*.jar',
-                             allowEmptyArchive: true
+            archiveArtifacts(
+                artifacts: 'Downloads/job-tracker/target/*.jar',
+                allowEmptyArchive: true
+            )
         }
 
         success {
