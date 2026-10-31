@@ -44,9 +44,9 @@ pipeline {
         stage('SonarCloud Analysis') {
     steps {
         dir('Downloads/job-tracker') {
-            withSonarQubeEnv('SonarCloud') {
-                sh 'sonar-scanner'
-            }
+           withSonarQubeEnv('SonarQube') {
+    sh 'sonar-scanner'
+}
         }
     }
 }
