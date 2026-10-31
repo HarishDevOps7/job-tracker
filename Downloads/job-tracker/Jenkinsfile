@@ -42,11 +42,16 @@ pipeline {
             }
         }
 
-        stage('SonarCloud Analysis') {
+       stage('SonarCloud Analysis') {
     steps {
         dir('Downloads/job-tracker') {
             withSonarQubeEnv('SonarQube') {
-                sh 'sonar-scanner'
+                sh '''
+                    echo "Checking SonarScanner..."
+                    which sonar-scanner
+                    sonar-scanner --version
+                    sonar-scanner
+                '''
             }
         }
     }
