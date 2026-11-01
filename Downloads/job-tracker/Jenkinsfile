@@ -41,35 +41,106 @@ pipeline {
             }
         }
 
-       stage('SonarCloud Analysis') {
-    steps {
-        dir('Downloads/job-tracker') {
-            script {
-                def scannerHome = tool 'SonarQube-Scanner'
+        stage('SonarCloud Analysis') {
+            steps {
+                dir('Downloads/job-tracker') {
+                    script {
+                        def scannerHome = tool 'SonarQube-Scanner'
 
-                withSonarQubeEnv('SonarQube') {
-                    sh """
-                        ${scannerHome}/bin/sonar-scanner \
-                        -Dsonar.organization=sonarqubepractice-c07 \
-                        -Dsonar.projectKey=sonarqubepractice-c07_job-tracker \
-                        -Dsonar.projectName=job-tracker \
-                        -Dsonar.host.url=https://sonarcloud.io \
-                        -Dsonar.sources=src/main/java \
-                        -Dsonar.tests=src/test/java \
-                        -Dsonar.java.binaries=target/classes \
-                        -Dsonar.sourceEncoding=UTF-8 \
-                        -X
-                    """
+                        withSonarQubeEnv('SonarQube') {
+                            sh """
+                                ${scannerHome}/bin/sonar-scanner \
+                                -Dsonar.organization=sonarqubepractice-c07 \
+                                -Dsonar.projectKey=sonarqubepractice-c07_job-tracker \
+                                -Dsonar.projectName=job-tracker \
+                                -Dsonar.host.url=https://sonarcloud.io \
+                                -Dsonar.sources=src/main/java \
+                                -Dsonar.tests=src/test/java \
+                                -Dsonar.java.binaries=target/classes \
+                                -Dsonar.sourceEncoding=UTF-8 \
+                                -X
+                            """
+                        }
+                    }
                 }
             }
         }
-    }
-}
 
         stage('Quality Gate') {
             steps {
                 timeout(time: 5, unit: 'MINUTES') {
                     waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+
+        stage('Deploy to UAT') {
+            steps {
+                dir('Downloads/job-tracker') {
+                    sh '''
+                        set -eu
+
+                        JAR="target/job-tracker-0.0.1-SNAPSHOT.jar"
+                        KEY="/var/lib/jenkins/.ssh/id_ed25519"
+                        UAT_USER="deployuser"
+                        UAT_HOST="172.31.30.56"
+                        UAT_DIR="/opt/jobtracker/uat"
+                        JAR_NAME="job-tracker-0.0.1-SNAPSHOT.jar"
+
+                        echo "Checking build artifact..."
+                        test -f "$JAR"
+
+                        echo "Transferring JAR to UAT..."
+                        scp -i "$KEY" \
+                            -o BatchMode=yes \
+                            -o StrictHostKeyChecking=yes \
+                            "$JAR" \
+                            "$UAT_USER@$UAT_HOST:$UAT_DIR/$JAR_NAME.new"
+
+                        echo "Starting UAT deployment..."
+
+                        ssh -i "$KEY" \
+                            -o BatchMode=yes \
+                            -o StrictHostKeyChecking=yes \
+                            "$UAT_USER@$UAT_HOST" \
+                            "bash -s" <<'REMOTE'
+                        set -eu
+
+                        cd /opt/jobtracker/uat
+
+                        JAR="job-tracker-0.0.1-SNAPSHOT.jar"
+                        BACKUP="$JAR.backup.$(date +%Y%m%d%H%M%S)"
+
+                        echo "Backing up current application..."
+                        cp "$JAR" "$BACKUP"
+
+                        echo "Replacing application JAR..."
+                        mv "$JAR.new" "$JAR"
+
+                        echo "Restarting Job Tracker service..."
+                        sudo -n /usr/bin/systemctl restart jobtracker
+
+                        echo "Checking application health..."
+
+                        for i in $(seq 1 30); do
+                            if curl -fsS http://localhost:8081/ > /dev/null; then
+                                echo "UAT deployment successful!"
+                                echo "Backup available at: $BACKUP"
+                                exit 0
+                            fi
+
+                            sleep 5
+                        done
+
+                        echo "Health check failed. Rolling back..."
+
+                        cp "$BACKUP" "$JAR"
+                        sudo -n /usr/bin/systemctl restart jobtracker
+
+                        echo "Rollback completed."
+                        exit 1
+                        REMOTE
+                    '''
                 }
             }
         }
@@ -89,11 +160,12 @@ pipeline {
         }
 
         success {
-            echo 'JOB TRACKER CI PIPELINE SUCCESS'
+            echo 'JOB TRACKER CI/CD PIPELINE SUCCESS'
+            echo 'Application deployed successfully to UAT.'
         }
 
         failure {
-            echo 'JOB TRACKER CI PIPELINE FAILED'
+            echo 'JOB TRACKER CI/CD PIPELINE FAILED'
         }
     }
 }
