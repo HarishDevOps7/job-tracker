@@ -35,7 +35,7 @@ pipeline {
         stage('OWASP Dependency Check') {
     steps {
         dir('Downloads/job-tracker') {
-            echo 'Scanning Maven dependencies for vulnerabilities'
+            echo 'Scanning dependencies for known vulnerabilities'
             sh 'mvn org.owasp:dependency-check-maven:13.0.0:check'
         }
     }
