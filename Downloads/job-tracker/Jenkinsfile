@@ -32,6 +32,14 @@ pipeline {
             }
         }
 
+        stage('Generate Coverage Report') {
+    steps {
+        dir('Downloads/job-tracker') {
+            sh 'mvn jacoco:report'
+        }
+    }
+}
+
         stage('OWASP Dependency Check') {
     steps {
         dir('Downloads/job-tracker') {
@@ -68,6 +76,7 @@ pipeline {
                                 ${scannerHome}/bin/sonar-scanner \
                                 -Dsonar.organization=sonarqubepractice-c07 \
                                 -Dsonar.projectKey=sonarqubepractice-c07_job-tracker \
+                                -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
                                 -Dsonar.projectName=job-tracker \
                                 -Dsonar.host.url=https://sonarcloud.io \
                                 -Dsonar.sources=src/main/java \
