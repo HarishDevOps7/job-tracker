@@ -32,6 +32,15 @@ pipeline {
             }
         }
 
+        stage('OWASP Dependency Check') {
+    steps {
+        dir('Downloads/job-tracker') {
+            echo 'Scanning Maven dependencies for vulnerabilities'
+            sh 'mvn org.owasp:dependency-check-maven:13.0.0:check'
+        }
+    }
+}
+
         stage('Package') {
             steps {
                 dir('Downloads/job-tracker') {
@@ -165,7 +174,7 @@ pipeline {
         }
 
         failure {
-            echo 'JOB TRACKER CI/CD PIPELINE FAILED'
+            echo 'JOB TRACKER CI/CD PIPELINE IS Failed'
         }
     }
 }

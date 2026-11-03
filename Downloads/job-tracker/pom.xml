@@ -20,6 +20,7 @@
 
     <properties>
         <java.version>21</java.version>
+        <logback.version>1.6.5</logback.version>
     </properties>
 
     <dependencies>
@@ -114,6 +115,7 @@
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
 
+
             <plugin>
     <groupId>org.jacoco</groupId>
     <artifactId>jacoco-maven-plugin</artifactId>
@@ -132,9 +134,32 @@
             </goals>
         </execution>
     </executions>
+
+</plugin>
+
+<plugin>
+    <groupId>org.owasp</groupId>
+    <artifactId>dependency-check-maven</artifactId>
+    <version>13.0.0</version>
+
+    <configuration>
+        <nvdApiKeyEnvironmentVariable>NVD_API_KEY</nvdApiKeyEnvironmentVariable>
+        <nvdApiDelay>6000</nvdApiDelay>
+        <nvdMaxRetryCount>15</nvdMaxRetryCount>
+    </configuration>
+
+    <executions>
+        <execution>
+            <goals>
+                <goal>check</goal>
+            </goals>
+        </execution>
+    </executions>
 </plugin>
         </plugins>
     
     </build>
+
+    
 
 </project>

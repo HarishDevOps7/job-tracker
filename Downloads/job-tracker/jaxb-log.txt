@@ -1,0 +1,21 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] -----------------------< com.harish:job-tracker >-----------------------
+[INFO] Building job-tracker 0.0.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- dependency:3.10.0:tree (default-cli) @ job-tracker ---
+[INFO] com.harish:job-tracker:jar:0.0.1-SNAPSHOT
+[INFO] \- org.springframework.boot:spring-boot-starter-data-jpa:jar:4.1.2:compile
+[INFO]    \- org.springframework.boot:spring-boot-data-jpa:jar:4.1.2:compile
+[INFO]       \- org.springframework.boot:spring-boot-hibernate:jar:4.1.2:compile
+[INFO]          \- org.hibernate.orm:hibernate-core:jar:7.4.13.Final:compile
+[INFO]             \- org.glassfish.jaxb:jaxb-runtime:jar:4.0.9:runtime
+[INFO]                \- org.glassfish.jaxb:jaxb-core:jar:4.0.9:runtime
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  12.487 s
+[INFO] Finished at: 2026-11-02T23:07:39+05:30
+[INFO] ------------------------------------------------------------------------
