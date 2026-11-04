@@ -16,7 +16,7 @@ pipeline {
 
         stage('Build') {
             steps {
-                dir('Downloads/job-tracker') {
+                dir('.') {
                     echo 'Building Job Tracker application'
                     sh 'mvn clean compile'
                 }
@@ -25,7 +25,7 @@ pipeline {
 
         stage('Unit Testing') {
             steps {
-                dir('Downloads/job-tracker') {
+                dir('.') {
                     echo 'Running JUnit and Mockito tests'
                     sh 'mvn test'
                 }
@@ -34,7 +34,7 @@ pipeline {
 
         stage('Generate Coverage Report') {
     steps {
-        dir('Downloads/job-tracker') {
+        dir('.') {
             sh 'mvn jacoco:report'
         }
     }
@@ -42,7 +42,7 @@ pipeline {
 
         stage('OWASP Dependency Check') {
     steps {
-        dir('Downloads/job-tracker') {
+        dir('.') {
             withCredentials([string(
                 credentialsId: 'nvd-api-key',
                 variable: 'NVD_API_KEY'
@@ -58,7 +58,7 @@ pipeline {
 
         stage('Package') {
             steps {
-                dir('Downloads/job-tracker') {
+                dir('.') {
                     echo 'Creating executable JAR'
                     sh 'mvn package -DskipTests'
                 }
@@ -67,7 +67,7 @@ pipeline {
 
         stage('SonarCloud Analysis') {
             steps {
-                dir('Downloads/job-tracker') {
+                dir('.') {
                     script {
                         def scannerHome = tool 'SonarQube-Scanner'
 
@@ -76,7 +76,7 @@ pipeline {
                                 ${scannerHome}/bin/sonar-scanner \
                                 -Dsonar.organization=sonarqubepractice-c07 \
                                 -Dsonar.projectKey=sonarqubepractice-c07_job-tracker \
-                                -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+                                -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
                                 -Dsonar.projectName=job-tracker \
                                 -Dsonar.host.url=https://sonarcloud.io \
                                 -Dsonar.sources=src/main/java \
@@ -101,7 +101,7 @@ pipeline {
 
         stage('Deploy to UAT') {
             steps {
-                dir('Downloads/job-tracker') {
+                dir('.') {
                     sh '''
                         set -eu
 
@@ -174,12 +174,12 @@ pipeline {
     post {
         always {
             junit(
-                testResults: 'Downloads/job-tracker/target/surefire-reports/*.xml',
+                testResults: './target/surefire-reports/*.xml',
                 allowEmptyResults: true
             )
 
             archiveArtifacts(
-                artifacts: 'Downloads/job-tracker/target/*.jar',
+                artifacts: './target/*.jar',
                 allowEmptyArchive: true
             )
         }
