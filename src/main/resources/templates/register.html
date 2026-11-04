@@ -1,0 +1,222 @@
+
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Account | Job Tracker</title>
+
+    <meta name="_csrf" th:content="${_csrf.token}">
+    <meta name="_csrf_header" th:content="${_csrf.headerName}">
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #f3f6fb;
+            font-family: Arial, sans-serif;
+        }
+
+        .register-container {
+            width: 100%;
+            max-width: 420px;
+            padding: 35px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+        }
+
+        h2 {
+            margin-bottom: 8px;
+            color: #1e293b;
+            text-align: center;
+        }
+
+        .subtitle {
+            margin-bottom: 25px;
+            color: #64748b;
+            text-align: center;
+        }
+
+        label {
+            display: block;
+            margin: 15px 0 7px;
+            color: #334155;
+            font-weight: 600;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #2563eb;
+        }
+
+        button {
+            width: 100%;
+            margin-top: 22px;
+            padding: 13px;
+            border: none;
+            border-radius: 6px;
+            background: #2563eb;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        #message {
+            margin-top: 15px;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        .login-link {
+            margin-top: 20px;
+            text-align: center;
+            color: #64748b;
+        }
+
+        a {
+            color: #2563eb;
+            text-decoration: none;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="register-container">
+
+    <h2>Create Account</h2>
+    <p class="subtitle">Join Job Tracker and manage your career</p>
+
+    <form id="registerForm">
+
+        <label for="fullName">Full Name</label>
+        <input type="text" id="fullName" placeholder="Enter your full name" required>
+
+        <label for="email">Email Address</label>
+        <input type="email" id="email" placeholder="Enter your email" required>
+
+        <label for="password">Password</label>
+        <input type="password" id="password"
+               placeholder="Minimum 8 characters" minlength="8" required>
+
+        <label for="confirmPassword">Confirm Password</label>
+        <input type="password" id="confirmPassword"
+               placeholder="Re-enter your password" required>
+
+        <button type="submit" id="registerButton">Create Account</button>
+
+    </form>
+
+    <p id="message"></p>
+
+    <p class="login-link">
+        Already have an account?
+        <a th:href="@{/login}">Login</a>
+    </p>
+
+</div>
+
+<script>
+    const form = document.getElementById("registerForm");
+    const message = document.getElementById("message");
+    const button = document.getElementById("registerButton");
+
+    form.addEventListener("submit", async function(event) {
+        event.preventDefault();
+
+        const fullName = document.getElementById("fullName").value.trim();
+        const email = document.getElementById("email").value.trim();
+        const password = document.getElementById("password").value;
+        const confirmPassword = document.getElementById("confirmPassword").value;
+
+        if (password.length < 8) {
+            message.textContent = "Password must contain at least 8 characters.";
+            message.style.color = "red";
+            return;
+        }
+
+        if (password !== confirmPassword) {
+            message.textContent = "Passwords do not match.";
+            message.style.color = "red";
+            return;
+        }
+
+        const csrfToken = document.querySelector('meta[name="_csrf"]').content;
+        const csrfHeader = document.querySelector('meta[name="_csrf_header"]').content;
+
+        button.disabled = true;
+        button.textContent = "Creating Account...";
+        message.textContent = "";
+
+        try {
+            const response = await fetch("/api/auth/register", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    [csrfHeader]: csrfToken
+                },
+                body: JSON.stringify({
+                    fullName: fullName,
+                    email: email,
+                    password: password
+                })
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                message.textContent = "Registration successful! Redirecting to login...";
+                message.style.color = "green";
+
+                setTimeout(() => {
+                    window.location.href = "/login?registered=true";
+                }, 1500);
+
+            } else if (response.status === 409) {
+                message.textContent = "This email is already registered.";
+                message.style.color = "red";
+
+            } else {
+                message.textContent = result.message || "Registration failed. Please check your details.";
+                message.style.color = "red";
+            }
+
+        } catch (error) {
+            message.textContent = "Unable to connect to the server. Please try again.";
+            message.style.color = "red";
+
+        } finally {
+            button.disabled = false;
+            button.textContent = "Create Account";
+        }
+    });
+</script>
+
+</body>
+</html>

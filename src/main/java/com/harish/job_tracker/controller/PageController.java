@@ -11,6 +11,11 @@ public class PageController {
         return "login";
     }
 
+    @GetMapping("/register")
+    public String registerPage() {
+        return "register";
+    }
+
     @GetMapping("/dashboard")
     public String dashboardPage() {
         return "dashboard";
