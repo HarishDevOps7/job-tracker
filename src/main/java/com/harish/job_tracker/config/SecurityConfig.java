@@ -59,17 +59,29 @@ public class SecurityConfig {
                     "/api/auth/**", "/css/**", "/js/**", "/images/**"
                 ).permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                .requestMatchers("/admin/**").hasRole("ADMIN")
                 .requestMatchers("/api/**").authenticated()
                 .anyRequest().authenticated()
             )
+.formLogin(form -> form
+    .loginPage("/login")
+    .loginProcessingUrl("/login")
+    .successHandler((request, response, authentication) -> {
 
-            .formLogin(form -> form
-                .loginPage("/login")
-                .loginProcessingUrl("/login")
-                .defaultSuccessUrl("/dashboard", true)
-                .failureUrl("/login?error=true")
-                .permitAll()
-            )
+        boolean isAdmin = authentication.getAuthorities()
+                .stream()
+                .anyMatch(authority ->
+                        authority.getAuthority().equals("ROLE_ADMIN"));
+
+        if (isAdmin) {
+            response.sendRedirect("/admin/dashboard");
+        } else {
+            response.sendRedirect("/dashboard");
+        }
+    })
+    .failureUrl("/login?error=true")
+    .permitAll()
+)
 
             .exceptionHandling(exception -> exception
                 .defaultAuthenticationEntryPointFor(

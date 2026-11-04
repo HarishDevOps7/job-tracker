@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Admin Dashboard</title>
+</head>
+<body>
+    <h1>Admin Dashboard</h1>
+    <p>Welcome, Administrator!</p>
+
+    <p>Only users with ADMIN role can access this page.</p>
+
+    <a th:href="@{/dashboard}">Back to Dashboard</a>
+</body>
+</html>
