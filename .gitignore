@@ -31,3 +31,11 @@ build/
 
 ### VS Code ###
 .vscode/
+
+
+# Local development configuration
+src/main/resources/application-local.properties
+
+# Local troubleshooting logs
+local-startup.txt
+startup-error.txt
