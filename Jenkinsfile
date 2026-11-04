@@ -14,83 +14,79 @@ pipeline {
 
     stages {
 
+        // 1. BUILD
         stage('Build') {
             steps {
-                dir('.') {
-                    echo 'Building Job Tracker application'
-                    sh 'mvn clean compile'
-                }
+                echo 'Building Job Tracker application'
+                sh 'mvn clean compile'
             }
         }
 
+        // 2. UNIT TESTING
         stage('Unit Testing') {
             steps {
-                dir('.') {
-                    echo 'Running JUnit and Mockito tests'
-                    sh 'mvn test'
+                echo 'Running JUnit and Mockito tests'
+                sh 'mvn test'
+            }
+        }
+
+        // 3. COVERAGE REPORT
+        stage('Generate Coverage Report') {
+            steps {
+                sh 'mvn jacoco:report'
+            }
+        }
+
+        // 4. OWASP DEPENDENCY CHECK
+        stage('OWASP Dependency Check') {
+            steps {
+                withCredentials([
+                    string(
+                        credentialsId: 'nvd-api-key',
+                        variable: 'NVD_API_KEY'
+                    )
+                ]) {
+                    sh '''
+                        mvn org.owasp:dependency-check-maven:13.0.0:check \
+                        -DnvdApiKey="$NVD_API_KEY"
+                    '''
                 }
             }
         }
 
-        stage('Generate Coverage Report') {
-    steps {
-        dir('.') {
-            sh 'mvn jacoco:report'
-        }
-    }
-}
-
-        stage('OWASP Dependency Check') {
-    steps {
-        dir('.') {
-            withCredentials([string(
-                credentialsId: 'nvd-api-key',
-                variable: 'NVD_API_KEY'
-            )]) {
-                sh '''
-                    mvn org.owasp:dependency-check-maven:13.0.0:check \
-                    -DnvdApiKey="$NVD_API_KEY"
-                '''
-            }
-        }
-    }
-}
-
+        // 5. PACKAGE
         stage('Package') {
             steps {
-                dir('.') {
-                    echo 'Creating executable JAR'
-                    sh 'mvn package -DskipTests'
-                }
+                echo 'Creating executable JAR'
+                sh 'mvn package -DskipTests'
             }
         }
 
+        // 6. SONARCLOUD ANALYSIS
         stage('SonarCloud Analysis') {
             steps {
-                dir('.') {
-                    script {
-                        def scannerHome = tool 'SonarQube-Scanner'
+                script {
+                    def scannerHome = tool 'SonarQube-Scanner'
 
-                        withSonarQubeEnv('SonarQube') {
-                            sh """
-                                ${scannerHome}/bin/sonar-scanner \
-                                -Dsonar.organization=sonarqubepractice-c07 \
-                                -Dsonar.projectKey=sonarqubepractice-c07_job-tracker \
-                                -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
-                                -Dsonar.projectName=job-tracker \
-                                -Dsonar.host.url=https://sonarcloud.io \
-                                -Dsonar.sources=src/main/java \
-                                -Dsonar.tests=src/test/java \
-                                -Dsonar.java.binaries=target/classes \
-                                -Dsonar.sourceEncoding=UTF-8 \
-                                -X
-                            """
-                        }
+                    withSonarQubeEnv('SonarQube') {
+                        sh """
+                            ${scannerHome}/bin/sonar-scanner \
+                            -Dsonar.organization=sonarqubepractice-c07 \
+                            -Dsonar.projectKey=sonarqubepractice-c07_job-tracker \
+                            -Dsonar.projectName=job-tracker \
+                            -Dsonar.host.url=https://sonarcloud.io \
+                            -Dsonar.sources=src/main/java \
+                            -Dsonar.tests=src/test/java \
+                            -Dsonar.java.binaries=target/classes \
+                            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
+                            -Dsonar.sourceEncoding=UTF-8
+                        """
                     }
                 }
             }
         }
 
+        // 7. QUALITY GATE
         stage('Quality Gate') {
             steps {
                 timeout(time: 5, unit: 'MINUTES') {
@@ -99,98 +95,121 @@ pipeline {
             }
         }
 
+        // 8. DEPLOY TO UAT
+        // PR and feature branch builds must never deploy.
         stage('Deploy to UAT') {
-            steps {
-                dir('.') {
-                    sh '''
-                        set -eu
-
-                        JAR="target/job-tracker-0.0.1-SNAPSHOT.jar"
-                        KEY="/var/lib/jenkins/.ssh/id_ed25519"
-                        UAT_USER="deployuser"
-                        UAT_HOST="172.31.30.56"
-                        UAT_DIR="/opt/jobtracker/uat"
-                        JAR_NAME="job-tracker-0.0.1-SNAPSHOT.jar"
-
-                        echo "Checking build artifact..."
-                        test -f "$JAR"
-
-                        echo "Transferring JAR to UAT..."
-                        scp -i "$KEY" \
-                            -o BatchMode=yes \
-                            -o StrictHostKeyChecking=yes \
-                            "$JAR" \
-                            "$UAT_USER@$UAT_HOST:$UAT_DIR/$JAR_NAME.new"
-
-                        echo "Starting UAT deployment..."
-
-                        ssh -i "$KEY" \
-                            -o BatchMode=yes \
-                            -o StrictHostKeyChecking=yes \
-                            "$UAT_USER@$UAT_HOST" \
-                            "bash -s" <<'REMOTE'
-                        set -eu
-
-                        cd /opt/jobtracker/uat
-
-                        JAR="job-tracker-0.0.1-SNAPSHOT.jar"
-                        BACKUP="$JAR.backup.$(date +%Y%m%d%H%M%S)"
-
-                        echo "Backing up current application..."
-                        cp "$JAR" "$BACKUP"
-
-                        echo "Replacing application JAR..."
-                        mv "$JAR.new" "$JAR"
-
-                        echo "Restarting Job Tracker service..."
-                        sudo -n /usr/bin/systemctl restart jobtracker
-
-                        echo "Checking application health..."
-
-                        for i in $(seq 1 30); do
-                            if curl -fsS http://localhost:8081/ > /dev/null; then
-                                echo "UAT deployment successful!"
-                                echo "Backup available at: $BACKUP"
-                                exit 0
-                            fi
-
-                            sleep 5
-                        done
-
-                        echo "Health check failed. Rolling back..."
-
-                        cp "$BACKUP" "$JAR"
-                        sudo -n /usr/bin/systemctl restart jobtracker
-
-                        echo "Rollback completed."
-                        exit 1
-REMOTE
-                    '''
+            when {
+                expression {
+                    return env.CHANGE_ID == null &&
+                           (env.BRANCH_NAME == null ||
+                            env.BRANCH_NAME == 'main')
                 }
+            }
+
+            steps {
+                sh '''
+                    set -eu
+
+                    JAR="target/job-tracker-0.0.1-SNAPSHOT.jar"
+                    KEY="/var/lib/jenkins/.ssh/id_ed25519"
+                    UAT_USER="deployuser"
+                    UAT_HOST="172.31.30.56"
+                    UAT_DIR="/opt/jobtracker/uat"
+                    JAR_NAME="job-tracker-0.0.1-SNAPSHOT.jar"
+
+                    echo "Checking build artifact..."
+                    test -f "$JAR"
+
+                    echo "Transferring JAR to UAT..."
+
+                    scp -i "$KEY" \
+                        -o BatchMode=yes \
+                        -o StrictHostKeyChecking=yes \
+                        "$JAR" \
+                        "$UAT_USER@$UAT_HOST:$UAT_DIR/$JAR_NAME.new"
+
+                    echo "Starting UAT deployment..."
+
+                    ssh -i "$KEY" \
+                        -o BatchMode=yes \
+                        -o StrictHostKeyChecking=yes \
+                        "$UAT_USER@$UAT_HOST" \
+                        "bash -s" <<'REMOTE'
+
+                    set -eu
+
+                    cd /opt/jobtracker/uat
+
+                    JAR="job-tracker-0.0.1-SNAPSHOT.jar"
+                    BACKUP="$JAR.backup.$(date +%Y%m%d%H%M%S)"
+
+                    echo "Backing up current application..."
+                    cp "$JAR" "$BACKUP"
+
+                    echo "Replacing application JAR..."
+                    mv "$JAR.new" "$JAR"
+
+                    echo "Restarting Job Tracker service..."
+                    sudo -n /usr/bin/systemctl restart jobtracker
+
+                    echo "Checking application health..."
+
+                    for i in $(seq 1 30); do
+                        if curl -fsS http://localhost:8081/ > /dev/null; then
+                            echo "UAT deployment successful!"
+                            echo "Backup available at: $BACKUP"
+                            exit 0
+                        fi
+
+                        sleep 5
+                    done
+
+                    echo "Health check failed. Rolling back..."
+
+                    cp "$BACKUP" "$JAR"
+
+                    sudo -n /usr/bin/systemctl restart jobtracker
+
+                    echo "Rollback completed."
+                    exit 1
+
+REMOTE
+                '''
             }
         }
     }
 
+    // POST BUILD ACTIONS
     post {
+
         always {
             junit(
-                testResults: './target/surefire-reports/*.xml',
+                testResults: 'target/surefire-reports/*.xml',
                 allowEmptyResults: true
             )
 
             archiveArtifacts(
-                artifacts: './target/*.jar',
+                artifacts: 'target/*.jar',
                 allowEmptyArchive: true
             )
         }
 
         success {
             echo 'JOB TRACKER CI/CD PIPELINE SUCCESS'
-            echo 'Application deployed successfully to UAT.'
+
+            script {
+                if (env.CHANGE_ID != null) {
+                    echo 'Pull Request validation completed successfully.'
+                } else if (env.BRANCH_NAME == 'main' || env.BRANCH_NAME == null) {
+                    echo 'Main branch pipeline completed.'
+                } else {
+                    echo 'Feature branch CI validation completed.'
+                }
+            }
         }
 
         failure {
-            echo 'JOB TRACKER CI/CD PIPELINE IS Failed'
+            echo 'JOB TRACKER CI/CD PIPELINE FAILED.'
         }
     }
 }

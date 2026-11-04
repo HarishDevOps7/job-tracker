@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard | Job Tracker</title>
+</head>
+<body>
+    <h1>Welcome to Job Tracker!</h1>
+    <p>You have successfully logged in.</p>
+
+    <form th:action="@{/logout}" method="post">
+    <input type="hidden"
+           th:name="${_csrf.parameterName}"
+           th:value="${_csrf.token}" />
+
+    <button type="submit">Logout</button>
+</form>
+</body>
+</html>
