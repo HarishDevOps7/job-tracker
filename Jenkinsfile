@@ -164,7 +164,7 @@ pipeline {
 
                         echo "Rollback completed."
                         exit 1
-                        REMOTE
+REMOTE
                     '''
                 }
             }
