@@ -64,23 +64,24 @@ pipeline {
         }
 
         // 6. BUILD REACT FRONTEND
-        stage('Build Frontend') {
-            steps {
-                echo 'Building React frontend'
+       stage('Build Frontend') {
+    steps {
+        echo 'Building React frontend'
 
-                dir('frontend') {
-                    sh '''
-                        node --version
-                        npm --version
+        dir('frontend') {
+            sh '''
+                node --version
+                npm --version
 
-                        npm ci
-                        npm run build
+                npm ci --include=optional
 
-                        test -s dist/index.html
-                    '''
-                }
-            }
+                npm run build
+
+                test -s dist/index.html
+            '''
         }
+    }
+}
 
         // 7. SONARCLOUD ANALYSIS
         stage('SonarCloud Analysis') {
