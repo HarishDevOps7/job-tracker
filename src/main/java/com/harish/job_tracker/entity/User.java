@@ -27,6 +27,9 @@ public class User {
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
+    @Column(nullable = false)
+    private boolean active = true;
+
     public User() {
     }
 
@@ -56,6 +59,10 @@ public class User {
         return createdAt;
     }
 
+    public boolean isActive() {
+    return active;
+    }
+
     // Setters
 
     public void setFullName(String fullName) {
@@ -72,5 +79,9 @@ public class User {
 
     public void setRole(UserRole role) {
         this.role = role;
+    }
+
+    public void setActive(boolean active) {
+    this.active = active;
     }
 }
