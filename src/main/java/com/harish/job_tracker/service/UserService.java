@@ -1,3 +1,4 @@
+
 package com.harish.job_tracker.service;
 
 import com.harish.job_tracker.dto.RegisterRequest;
@@ -10,6 +11,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+
+import java.util.Locale;
 
 @Service
 public class UserService {
@@ -28,27 +31,35 @@ public class UserService {
     @Transactional
     public User register(RegisterRequest request) {
 
-        String email = request.getEmail().trim().toLowerCase();
+        // Normalize email before database operations
+        String normalizedEmail = request.getEmail()
+                .trim()
+                .toLowerCase(Locale.ROOT);
 
-        if (userRepository.existsByEmail(email)) {
+        // Check duplicate email
+        if (userRepository.existsByEmail(normalizedEmail)) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
                     "Email is already registered"
             );
         }
 
+        // Create new user
         User user = new User();
 
         user.setFullName(request.getFullName().trim());
-        user.setEmail(email);
+        user.setEmail(normalizedEmail);
 
-        // Never store plain-text passwords
+        // Encrypt password
         user.setPasswordHash(
                 passwordEncoder.encode(request.getPassword())
         );
 
-        // Public registration always creates a normal user
+        // Default role
         user.setRole(UserRole.USER);
+
+        // New account active by default
+        user.setActive(true);
 
         return userRepository.save(user);
     }

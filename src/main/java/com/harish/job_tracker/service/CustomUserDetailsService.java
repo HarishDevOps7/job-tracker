@@ -1,9 +1,10 @@
 
-
 package com.harish.job_tracker.service;
 
 import com.harish.job_tracker.entity.User;
 import com.harish.job_tracker.repository.UserRepository;
+
+import java.util.Locale;
 
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -23,7 +24,9 @@ public class CustomUserDetailsService implements UserDetailsService {
     public UserDetails loadUserByUsername(String email)
             throws UsernameNotFoundException {
 
-        User user = userRepository.findByEmail(email)
+        String normalizedEmail = email.trim().toLowerCase(Locale.ROOT);
+
+        User user = userRepository.findByEmail(normalizedEmail)
                 .orElseThrow(() ->
                     new UsernameNotFoundException("User not found")
                 );
@@ -32,6 +35,7 @@ public class CustomUserDetailsService implements UserDetailsService {
                 .withUsername(user.getEmail())
                 .password(user.getPasswordHash())
                 .roles(user.getRole().name())
+                .disabled(!user.isActive())
                 .build();
     }
 }
