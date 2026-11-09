@@ -81,7 +81,7 @@ pipeline {
             '''
         }
     }
-}cd 
+}
 
         // 7. SONARCLOUD ANALYSIS
         stage('SonarCloud Analysis') {
