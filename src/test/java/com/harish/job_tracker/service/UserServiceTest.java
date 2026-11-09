@@ -1,6 +1,6 @@
 
 package com.harish.job_tracker.service;
-
+import com.harish.job_tracker.service.OtpService;
 import com.harish.job_tracker.dto.RegisterRequest;
 import com.harish.job_tracker.entity.User;
 import com.harish.job_tracker.entity.UserRole;
@@ -21,6 +21,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -31,9 +32,11 @@ class UserServiceTest {
 
     @Mock
     private PasswordEncoder passwordEncoder;
-
+    @Mock
+    private OtpService otpService;
     @InjectMocks
     private UserService userService;
+
 
     private RegisterRequest request;
 

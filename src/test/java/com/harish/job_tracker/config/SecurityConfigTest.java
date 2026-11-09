@@ -16,8 +16,12 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 
+import org.springframework.context.annotation.Import;
+import com.harish.job_tracker.config.TestMailConfiguration;
+
 @SpringBootTest
 @AutoConfigureMockMvc
+@Import(TestMailConfiguration.class)
 @ActiveProfiles("test")
 class SecurityConfigTest {
 

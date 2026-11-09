@@ -12,14 +12,16 @@ import java.util.Optional;
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
 
-    // Existing authentication and registration methods
     Optional<User> findByEmail(String email);
 
     boolean existsByEmail(String email);
 
+    Optional<User> findByMobileNumber(String mobileNumber);
+
+    boolean existsByMobileNumber(String mobileNumber);
+
     boolean existsByRole(UserRole role);
 
-    // Admin user management methods
     List<User> findByFullNameContainingIgnoreCaseOrEmailContainingIgnoreCase(
             String fullName, String email);
 

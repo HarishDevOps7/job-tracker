@@ -2,6 +2,7 @@
 package com.harish.job_tracker.service;
 
 import com.harish.job_tracker.dto.RegisterRequest;
+import com.harish.job_tracker.dto.MobileRegisterRequest;
 import com.harish.job_tracker.entity.User;
 import com.harish.job_tracker.entity.UserRole;
 import com.harish.job_tracker.repository.UserRepository;
@@ -19,24 +20,26 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final OtpService otpService;
 
     public UserService(
             UserRepository userRepository,
-            PasswordEncoder passwordEncoder) {
+            PasswordEncoder passwordEncoder,
+            OtpService otpService) {
 
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.otpService = otpService;
     }
 
+    // Email registration
     @Transactional
     public User register(RegisterRequest request) {
 
-        // Normalize email before database operations
         String normalizedEmail = request.getEmail()
                 .trim()
                 .toLowerCase(Locale.ROOT);
 
-        // Check duplicate email
         if (userRepository.existsByEmail(normalizedEmail)) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
@@ -44,23 +47,60 @@ public class UserService {
             );
         }
 
-        // Create new user
         User user = new User();
 
         user.setFullName(request.getFullName().trim());
         user.setEmail(normalizedEmail);
-
-        // Encrypt password
         user.setPasswordHash(
                 passwordEncoder.encode(request.getPassword())
         );
 
-        // Default role
         user.setRole(UserRole.USER);
+        user.setActive(false);
+        user.setEmailVerified(false);
 
-        // New account active by default
-        user.setActive(true);
+        User savedUser = userRepository.save(user);
 
-        return userRepository.save(user);
+        otpService.sendEmailOtp(savedUser);
+
+        return savedUser;
+    }
+
+    // Mobile registration
+    @Transactional
+    public User registerMobile(MobileRegisterRequest request) {
+
+        String mobile = request.getMobileNumber()
+                .replaceAll("\\D", "");
+
+        if (mobile.startsWith("91") && mobile.length() == 12) {
+            mobile = mobile.substring(2);
+        }
+
+        if (userRepository.existsByMobileNumber(mobile)) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Mobile number is already registered"
+            );
+        }
+
+        User user = new User();
+
+        user.setFullName(request.getFullName().trim());
+        user.setMobileNumber(mobile);
+
+        user.setEmail(null);
+        user.setPasswordHash(null);
+
+        user.setRole(UserRole.USER);
+        user.setActive(false);
+        user.setEmailVerified(false);
+        user.setMobileVerified(false);
+
+        User savedUser = userRepository.save(user);
+
+        otpService.sendMobileOtp(savedUser);
+
+        return savedUser;
     }
 }

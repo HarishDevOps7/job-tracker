@@ -19,12 +19,18 @@ public class JobApplication {
     private String jobTitle;
 
     private String source;
+
     private String jobUrl;
+
     private LocalDate appliedDate;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private ApplicationStatus status = ApplicationStatus.APPLIED;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private User user;
 
     public JobApplication() {
     }
@@ -57,6 +63,10 @@ public class JobApplication {
         return status;
     }
 
+    public User getUser() {
+        return user;
+    }
+
     public void setCompanyName(String value) {
         this.companyName = value;
     }
@@ -79,5 +89,9 @@ public class JobApplication {
 
     public void setStatus(ApplicationStatus value) {
         this.status = value;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
     }
 }

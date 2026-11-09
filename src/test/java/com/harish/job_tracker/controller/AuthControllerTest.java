@@ -65,8 +65,8 @@ void setUp() throws Exception {
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
         assertNotNull(response.getBody());
 
-        assertEquals("Registration successful",
-                response.getBody().get("message"));
+        assertEquals("OTP sent to your registered email",
+        response.getBody().get("message"));
 
         verify(userService, times(1)).register(request);
     }
@@ -85,7 +85,7 @@ void setUp() throws Exception {
         assertEquals(1L, body.get("id"));
         assertEquals("Harish", body.get("fullName"));
         assertEquals("harish@example.com", body.get("email"));
-        assertEquals(UserRole.USER, body.get("role"));
+        assertEquals("USER", body.get("role"));
     }
 
     @Test
