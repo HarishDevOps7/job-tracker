@@ -35,6 +35,12 @@ public class GoogleOAuth2UserService extends OidcUserService {
 
         OidcUser oidcUser = super.loadUser(userRequest);
 
+        return processOidcUser(oidcUser);
+    }
+
+    @Transactional
+    OidcUser processOidcUser(OidcUser oidcUser) {
+
         String provider = "GOOGLE";
         String providerUserId = oidcUser.getSubject();
         String email = oidcUser.getEmail();
@@ -52,7 +58,6 @@ public class GoogleOAuth2UserService extends OidcUserService {
 
         email = email.trim().toLowerCase();
 
-        // 1. Check whether this Google account is already linked.
         var existingProvider =
                 providerRepository.findByProviderAndProviderUserId(
                         provider, providerUserId
@@ -62,7 +67,6 @@ public class GoogleOAuth2UserService extends OidcUserService {
             return oidcUser;
         }
 
-        // 2. Do not automatically link an existing email account.
         if (userRepository.findByEmail(email).isPresent()) {
             throw new OAuth2AuthenticationException(
                     new OAuth2Error("account_already_exists"),
@@ -71,7 +75,6 @@ public class GoogleOAuth2UserService extends OidcUserService {
             );
         }
 
-        // 3. Create a new application user.
         User user = new User();
 
         String fullName = oidcUser.getFullName();
@@ -90,7 +93,6 @@ public class GoogleOAuth2UserService extends OidcUserService {
 
         User savedUser = userRepository.save(user);
 
-        // 4. Save the Google provider identity.
         UserAuthProvider authProvider = new UserAuthProvider();
 
         authProvider.setUser(savedUser);

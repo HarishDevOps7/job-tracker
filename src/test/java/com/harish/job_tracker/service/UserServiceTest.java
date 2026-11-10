@@ -1,7 +1,8 @@
 
 package com.harish.job_tracker.service;
-import com.harish.job_tracker.service.OtpService;
+
 import com.harish.job_tracker.dto.RegisterRequest;
+import com.harish.job_tracker.dto.MobileRegisterRequest;
 import com.harish.job_tracker.entity.User;
 import com.harish.job_tracker.entity.UserRole;
 import com.harish.job_tracker.repository.UserRepository;
@@ -32,11 +33,12 @@ class UserServiceTest {
 
     @Mock
     private PasswordEncoder passwordEncoder;
+
     @Mock
     private OtpService otpService;
+
     @InjectMocks
     private UserService userService;
-
 
     private RegisterRequest request;
 
@@ -47,6 +49,8 @@ class UserServiceTest {
         request.setEmail(" HARISH@GMAIL.COM ");
         request.setPassword("Password@123");
     }
+
+    // EMAIL REGISTRATION TESTS
 
     @Test
     void registerSuccessfully() {
@@ -67,10 +71,11 @@ class UserServiceTest {
         assertEquals("harish@gmail.com", result.getEmail());
         assertEquals("bcrypt-hash", result.getPasswordHash());
         assertEquals(UserRole.USER, result.getRole());
+        assertFalse(result.isActive());
+        assertFalse(result.isEmailVerified());
 
-        verify(userRepository).existsByEmail("harish@gmail.com");
-        verify(passwordEncoder).encode("Password@123");
         verify(userRepository).save(any(User.class));
+        verify(otpService).sendEmailOtp(result);
     }
 
     @Test
@@ -86,13 +91,13 @@ class UserServiceTest {
 
         assertEquals(HttpStatus.CONFLICT, exception.getStatusCode());
 
-        verify(userRepository).existsByEmail("harish@gmail.com");
-        verify(passwordEncoder, never()).encode(any());
+        verify(passwordEncoder, never()).encode(anyString());
         verify(userRepository, never()).save(any(User.class));
+        verify(otpService, never()).sendEmailOtp(any(User.class));
     }
 
     @Test
-    void registerShouldAlwaysAssignUserRole() {
+    void registerShouldNormalizeEmailAndName() {
 
         when(userRepository.existsByEmail("harish@gmail.com"))
                 .thenReturn(false);
@@ -103,19 +108,14 @@ class UserServiceTest {
         when(userRepository.save(any(User.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
+        User result = userService.register(request);
 
-        userService.register(request);
-
-        verify(userRepository).save(captor.capture());
-
-        User savedUser = captor.getValue();
-
-        assertEquals(UserRole.USER, savedUser.getRole());
+        assertEquals("Harish Naidu", result.getFullName());
+        assertEquals("harish@gmail.com", result.getEmail());
     }
 
     @Test
-    void registerShouldStoreEncodedPasswordNotPlainText() {
+    void registerShouldStoreEncodedPassword() {
 
         when(userRepository.existsByEmail("harish@gmail.com"))
                 .thenReturn(false);
@@ -130,5 +130,92 @@ class UserServiceTest {
 
         assertNotEquals("Password@123", result.getPasswordHash());
         assertEquals("bcrypt-hash", result.getPasswordHash());
+    }
+
+    // MOBILE REGISTRATION TESTS
+
+    @Test
+    void registerMobileSuccessfully() {
+
+        MobileRegisterRequest mobileRequest = new MobileRegisterRequest();
+        mobileRequest.setFullName(" Harish Naidu ");
+        mobileRequest.setMobileNumber("9876543210");
+
+        when(userRepository.existsByMobileNumber("9876543210"))
+                .thenReturn(false);
+
+        when(userRepository.save(any(User.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        User result = userService.registerMobile(mobileRequest);
+
+        assertNotNull(result);
+        assertEquals("Harish Naidu", result.getFullName());
+        assertEquals("9876543210", result.getMobileNumber());
+        assertNull(result.getEmail());
+        assertNull(result.getPasswordHash());
+        assertEquals(UserRole.USER, result.getRole());
+        assertFalse(result.isActive());
+        assertFalse(result.isEmailVerified());
+        assertFalse(result.isMobileVerified());
+
+        verify(otpService).sendMobileOtp(result);
+    }
+
+    @Test
+    void registerMobileShouldRemoveCountryCode91() {
+
+        MobileRegisterRequest mobileRequest = new MobileRegisterRequest();
+        mobileRequest.setFullName("Harish");
+        mobileRequest.setMobileNumber("+91 9876543210");
+
+        when(userRepository.existsByMobileNumber("9876543210"))
+                .thenReturn(false);
+
+        when(userRepository.save(any(User.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        User result = userService.registerMobile(mobileRequest);
+
+        assertEquals("9876543210", result.getMobileNumber());
+    }
+
+    @Test
+    void registerMobileShouldRejectDuplicateNumber() {
+
+        MobileRegisterRequest mobileRequest = new MobileRegisterRequest();
+        mobileRequest.setFullName("Harish");
+        mobileRequest.setMobileNumber("9876543210");
+
+        when(userRepository.existsByMobileNumber("9876543210"))
+                .thenReturn(true);
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> userService.registerMobile(mobileRequest)
+        );
+
+        assertEquals(HttpStatus.CONFLICT, exception.getStatusCode());
+
+        verify(userRepository, never()).save(any(User.class));
+        verify(otpService, never()).sendMobileOtp(any(User.class));
+    }
+
+    @Test
+    void registerMobileShouldRemoveNonDigitCharacters() {
+
+        MobileRegisterRequest mobileRequest = new MobileRegisterRequest();
+        mobileRequest.setFullName("Harish");
+        mobileRequest.setMobileNumber("987-654-3210");
+
+        when(userRepository.existsByMobileNumber("9876543210"))
+                .thenReturn(false);
+
+        when(userRepository.save(any(User.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        User result = userService.registerMobile(mobileRequest);
+
+        assertEquals("9876543210", result.getMobileNumber());
     }
 }
