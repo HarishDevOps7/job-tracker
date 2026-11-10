@@ -79,10 +79,7 @@ public class OtpService {
             );
         }
 
-        String otp = String.format(
-                "%06d",
-                secureRandom.nextInt(1_000_000)
-        );
+        String otp = generateOtp();
 
         VerificationChallenge challenge =
                 new VerificationChallenge();
@@ -119,19 +116,9 @@ public class OtpService {
                                 "OTP not found or already used"
                         ));
 
-        if (challenge.getExpiresAt().isBefore(LocalDateTime.now())) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "OTP has expired"
-            );
-        }
+        validateOtpExpiry(challenge, "OTP has expired");
 
-        if (challenge.getAttempts() >= 5) {
-            throw new ResponseStatusException(
-                    HttpStatus.TOO_MANY_REQUESTS,
-                    "Maximum OTP attempts exceeded"
-            );
-        }
+        validateMaxAttempts(challenge);
 
         if (otp == null
                 || challenge.getOtpHash() == null
@@ -139,8 +126,7 @@ public class OtpService {
                         otp,
                         challenge.getOtpHash())) {
 
-            challenge.setAttempts(challenge.getAttempts() + 1);
-            challengeRepository.save(challenge);
+            recordFailedAttempt(challenge);
 
             return false;
         }
@@ -249,40 +235,7 @@ public class OtpService {
         );
         challenge.setAttempts(0);
 
-        // MOCK MODE: Generate and store hashed OTP locally.
-        if ("MOCK".equalsIgnoreCase(smsMode)) {
-
-            String otp = String.format(
-                    "%06d",
-                    secureRandom.nextInt(1_000_000)
-            );
-
-            challenge.setOtpHash(
-                    passwordEncoder.encode(otp)
-            );
-
-            // Development testing only.
-            log.warn(
-                    "MOCK SMS OTP for {}: {}",
-                    mobile.substring(0, 2) + "******"
-                            + mobile.substring(8),
-                    otp
-            );
-        }
-
-        // MSG91 MODE: MSG91 manages OTP generation.
-        else if ("MSG91".equalsIgnoreCase(smsMode)) {
-
-            smsService.sendOtp(mobile);
-
-            challenge.setOtpHash(null);
-        }
-
-        else {
-            throw new IllegalStateException(
-                    "Unsupported SMS mode: " + smsMode
-            );
-        }
+        sendSmsOtp(challenge, mobile, "MOCK SMS OTP");
 
         challengeRepository.save(challenge);
     }
@@ -309,66 +262,22 @@ public class OtpService {
                                 "Mobile OTP not found or already used"
                         ));
 
-        if (challenge.getExpiresAt().isBefore(LocalDateTime.now())) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Mobile OTP has expired"
-            );
-        }
+        validateOtpExpiry(challenge, "Mobile OTP has expired");
 
-        if (challenge.getAttempts() >= 5) {
-            throw new ResponseStatusException(
-                    HttpStatus.TOO_MANY_REQUESTS,
-                    "Maximum OTP attempts exceeded"
-            );
-        }
+        validateMaxAttempts(challenge);
 
         if (otp == null || !otp.matches("\\d{6}")) {
 
-            challenge.setAttempts(
-                    challenge.getAttempts() + 1
-            );
-
-            challengeRepository.save(challenge);
+            recordFailedAttempt(challenge);
 
             return false;
         }
 
-        // Declare verified only once.
-        boolean verified;
-
-        // MOCK OTP verification.
-        if ("MOCK".equalsIgnoreCase(smsMode)) {
-
-            verified = challenge.getOtpHash() != null
-                    && passwordEncoder.matches(
-                            otp,
-                            challenge.getOtpHash()
-                    );
-        }
-
-        // MSG91 OTP verification.
-        else if ("MSG91".equalsIgnoreCase(smsMode)) {
-
-            verified = smsService.verifyOtp(
-                    mobile,
-                    otp
-            );
-        }
-
-        else {
-            throw new IllegalStateException(
-                    "Unsupported SMS mode: " + smsMode
-            );
-        }
+        boolean verified = verifySmsOtp(challenge, mobile, otp);
 
         if (!verified) {
 
-            challenge.setAttempts(
-                    challenge.getAttempts() + 1
-            );
-
-            challengeRepository.save(challenge);
+            recordFailedAttempt(challenge);
 
             return false;
         }
@@ -431,33 +340,7 @@ public void sendMobileLoginOtp(User user) {
     );
     challenge.setAttempts(0);
 
-    if ("MOCK".equalsIgnoreCase(smsMode)) {
-
-        String otp = String.format(
-                "%06d",
-                secureRandom.nextInt(1_000_000)
-        );
-
-        challenge.setOtpHash(
-                passwordEncoder.encode(otp)
-        );
-
-        log.warn("MOCK LOGIN OTP for {}: {}",
-                mobile.substring(0, 2) + "******"
-                        + mobile.substring(8),
-                otp
-        );
-
-    } else if ("MSG91".equalsIgnoreCase(smsMode)) {
-
-        smsService.sendOtp(mobile);
-        challenge.setOtpHash(null);
-
-    } else {
-        throw new IllegalStateException(
-                "Unsupported SMS mode: " + smsMode
-        );
-    }
+    sendSmsOtp(challenge, mobile, "MOCK LOGIN OTP");
 
     challengeRepository.save(challenge);
 }
@@ -481,49 +364,19 @@ public boolean verifyMobileLoginOtp(
                             "Login OTP not found or already used"
                     ));
 
-    if (challenge.getExpiresAt().isBefore(LocalDateTime.now())) {
-        throw new ResponseStatusException(
-                HttpStatus.BAD_REQUEST,
-                "Login OTP has expired"
-        );
-    }
+    validateOtpExpiry(challenge, "Login OTP has expired");
 
-    if (challenge.getAttempts() >= 5) {
-        throw new ResponseStatusException(
-                HttpStatus.TOO_MANY_REQUESTS,
-                "Maximum OTP attempts exceeded"
-        );
-    }
+    validateMaxAttempts(challenge);
 
     if (otp == null || !otp.matches("\\d{6}")) {
-        challenge.setAttempts(challenge.getAttempts() + 1);
-        challengeRepository.save(challenge);
+        recordFailedAttempt(challenge);
         return false;
     }
 
-    boolean verified;
-
-    if ("MOCK".equalsIgnoreCase(smsMode)) {
-
-        verified = challenge.getOtpHash() != null
-                && passwordEncoder.matches(
-                        otp,
-                        challenge.getOtpHash()
-                );
-
-    } else if ("MSG91".equalsIgnoreCase(smsMode)) {
-
-        verified = smsService.verifyOtp(mobile, otp);
-
-    } else {
-        throw new IllegalStateException(
-                "Unsupported SMS mode: " + smsMode
-        );
-    }
+    boolean verified = verifySmsOtp(challenge, mobile, otp);
 
     if (!verified) {
-        challenge.setAttempts(challenge.getAttempts() + 1);
-        challengeRepository.save(challenge);
+        recordFailedAttempt(challenge);
         return false;
     }
 
@@ -558,10 +411,7 @@ public boolean verifyMobileLoginOtp(
             );
         }
 
-        String otp = String.format(
-                "%06d",
-                secureRandom.nextInt(1_000_000)
-        );
+        String otp = generateOtp();
 
         VerificationChallenge challenge =
                 new VerificationChallenge();
@@ -601,19 +451,9 @@ public boolean verifyMobileLoginOtp(
                                 "OTP not found or already used"
                         ));
 
-        if (challenge.getExpiresAt().isBefore(LocalDateTime.now())) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "OTP has expired"
-            );
-        }
+        validateOtpExpiry(challenge, "OTP has expired");
 
-        if (challenge.getAttempts() >= 5) {
-            throw new ResponseStatusException(
-                    HttpStatus.TOO_MANY_REQUESTS,
-                    "Maximum OTP attempts exceeded"
-            );
-        }
+        validateMaxAttempts(challenge);
 
         if (otp == null
                 || !otp.matches("\\d{6}")
@@ -622,8 +462,7 @@ public boolean verifyMobileLoginOtp(
                         otp,
                         challenge.getOtpHash())) {
 
-            challenge.setAttempts(challenge.getAttempts() + 1);
-            challengeRepository.save(challenge);
+            recordFailedAttempt(challenge);
 
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
@@ -648,6 +487,83 @@ public boolean verifyMobileLoginOtp(
         challengeRepository.save(challenge);
 
         return token;
+    }
+
+
+    // ==========================================
+    // SHARED OTP HELPERS
+    // ==========================================
+
+    private void validateOtpExpiry(
+            VerificationChallenge challenge,
+            String errorMessage) {
+
+        if (challenge.getExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    errorMessage
+            );
+        }
+    }
+
+    private void validateMaxAttempts(VerificationChallenge challenge) {
+        if (challenge.getAttempts() >= 5) {
+            throw new ResponseStatusException(
+                    HttpStatus.TOO_MANY_REQUESTS,
+                    "Maximum OTP attempts exceeded"
+            );
+        }
+    }
+
+    private void recordFailedAttempt(VerificationChallenge challenge) {
+        challenge.setAttempts(challenge.getAttempts() + 1);
+        challengeRepository.save(challenge);
+    }
+
+    private String generateOtp() {
+        return String.format("%06d", secureRandom.nextInt(1_000_000));
+    }
+
+    private void sendSmsOtp(
+            VerificationChallenge challenge,
+            String mobile,
+            String logLabel) {
+
+        if ("MOCK".equalsIgnoreCase(smsMode)) {
+            String otp = generateOtp();
+            challenge.setOtpHash(passwordEncoder.encode(otp));
+
+            log.warn("{} for {}: {}",
+                    logLabel,
+                    mobile.substring(0, 2) + "******" + mobile.substring(8),
+                    otp);
+        } else if ("MSG91".equalsIgnoreCase(smsMode)) {
+            smsService.sendOtp(mobile);
+            challenge.setOtpHash(null);
+        } else {
+            throw new IllegalStateException(
+                    "Unsupported SMS mode: " + smsMode
+            );
+        }
+    }
+
+    private boolean verifySmsOtp(
+            VerificationChallenge challenge,
+            String mobile,
+            String otp) {
+
+        if ("MOCK".equalsIgnoreCase(smsMode)) {
+            return challenge.getOtpHash() != null
+                    && passwordEncoder.matches(otp, challenge.getOtpHash());
+        }
+
+        if ("MSG91".equalsIgnoreCase(smsMode)) {
+            return smsService.verifyOtp(mobile, otp);
+        }
+
+        throw new IllegalStateException(
+                "Unsupported SMS mode: " + smsMode
+        );
     }
 
 
