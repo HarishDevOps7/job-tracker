@@ -165,14 +165,17 @@ public SecurityFilterChain securityFilterChain(
             .authenticationProvider(authenticationProvider)
 
             // CSRF protection
-            .csrf(csrf -> csrf
-                    .csrfTokenRepository(
-                            CookieCsrfTokenRepository.withHttpOnlyFalse()
-                    )
-                    .csrfTokenRequestHandler(
-                            new SpaCsrfTokenRequestHandler()
-                    )
-            )
+           .csrf(csrf -> csrf
+    .csrfTokenRepository(
+        CookieCsrfTokenRepository.withHttpOnlyFalse()
+    )
+    .csrfTokenRequestHandler(
+        new SpaCsrfTokenRequestHandler()
+    )
+    .ignoringRequestMatchers(
+        "/api/auth/login/mobile"
+    )
+)
 
             // CORS
             .cors(Customizer.withDefaults())
