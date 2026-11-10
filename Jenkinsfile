@@ -157,65 +157,65 @@ pipeline {
                         "$UAT_USER@$UAT_HOST" \
                         "bash -s" <<'REMOTE'
 
-                    set -eu
+set -eu
 
-                    cd /opt/jobtracker/uat
+cd /opt/jobtracker/uat
 
-                    JAR="job-tracker-0.0.1-SNAPSHOT.jar"
-                    BACKUP=""
+JAR="job-tracker-0.0.1-SNAPSHOT.jar"
+BACKUP=""
 
-                    # Backup existing JAR
-                    if [ -f "$JAR" ]; then
-                        BACKUP="$JAR.backup.$(date +%Y%m%d%H%M%S)"
-                        cp "$JAR" "$BACKUP"
-                        echo "Previous JAR backed up: $BACKUP"
-                    fi
+# Backup existing JAR
+if [ -f "$JAR" ]; then
+    BACKUP="$JAR.backup.$(date +%Y%m%d%H%M%S)"
+    cp "$JAR" "$BACKUP"
+    echo "Previous JAR backed up: $BACKUP"
+fi
 
-                    # Activate new JAR
-                    mv "$JAR.new" "$JAR"
+# Activate new JAR
+mv "$JAR.new" "$JAR"
 
-                    # Restart application
-                    sudo -n /usr/bin/systemctl restart jobtracker
+# Restart application
+sudo -n /usr/bin/systemctl restart jobtracker
 
-                    echo "Waiting for backend startup..."
+echo "Waiting for backend startup..."
 
-                    HEALTHY=false
+HEALTHY=false
 
-                    # Wait up to five minutes
-                    for i in $(seq 1 60); do
+# Wait up to five minutes
+for i in $(seq 1 60); do
 
-                        if curl -fsS \
-                            http://localhost:8081/ \
-                            > /dev/null; then
+    if curl -fsS \
+        http://localhost:8081/ \
+        > /dev/null; then
 
-                            HEALTHY=true
-                            echo "Backend deployment successful!"
-                            break
-                        fi
+        HEALTHY=true
+        echo "Backend deployment successful!"
+        break
+    fi
 
-                        echo "Waiting for backend... ($i/60)"
-                        sleep 5
-                    done
+    echo "Waiting for backend... ($i/60)"
+    sleep 5
+done
 
-                    # Rollback if deployment fails
-                    if [ "$HEALTHY" != "true" ]; then
+# Rollback if deployment fails
+if [ "$HEALTHY" != "true" ]; then
 
-                        echo "Backend health check failed!"
+    echo "Backend health check failed!"
 
-                        if [ -n "$BACKUP" ]; then
-                            echo "Rolling back previous JAR..."
+    if [ -n "$BACKUP" ]; then
+        echo "Rolling back previous JAR..."
 
-                            cp "$BACKUP" "$JAR"
-                            sudo -n /usr/bin/systemctl restart jobtracker
+        cp "$BACKUP" "$JAR"
+        sudo -n /usr/bin/systemctl restart jobtracker
 
-                        else
-                            echo "No previous JAR available for rollback."
-                        fi
+    else
+        echo "No previous JAR available for rollback."
+    fi
 
-                        exit 1
-                    fi
+    exit 1
+fi
 
-                    REMOTE
+REMOTE
                 '''
             }
         }
@@ -266,56 +266,56 @@ pipeline {
                         "$UAT_USER@$UAT_HOST" \
                         "bash -s -- '$RELEASE_ID' '$ARCHIVE'" <<'REMOTE'
 
-                    set -eu
+set -eu
 
-                    RELEASE_ID="$1"
-                    ARCHIVE="$2"
+RELEASE_ID="$1"
+ARCHIVE="$2"
 
-                    BASE="/var/www/jobtracker"
-                    RELEASE_DIR="$BASE/releases/$RELEASE_ID"
-                    CURRENT="$BASE/current"
-                    TEMP_LINK="$BASE/current.new"
+BASE="/var/www/jobtracker"
+RELEASE_DIR="$BASE/releases/$RELEASE_ID"
+CURRENT="$BASE/current"
+TEMP_LINK="$BASE/current.new"
 
-                    echo "Creating frontend release..."
+echo "Creating frontend release..."
 
-                    mkdir -p "$RELEASE_DIR"
+mkdir -p "$RELEASE_DIR"
 
-                    tar -xzf "/tmp/$ARCHIVE" -C "$RELEASE_DIR"
+tar -xzf "/tmp/$ARCHIVE" -C "$RELEASE_DIR"
 
-                    test -s "$RELEASE_DIR/index.html"
+test -s "$RELEASE_DIR/index.html"
 
-                    OLD_TARGET=""
+OLD_TARGET=""
 
-                    if [ -L "$CURRENT" ]; then
-                        OLD_TARGET="$(readlink "$CURRENT")"
-                    fi
+if [ -L "$CURRENT" ]; then
+    OLD_TARGET="$(readlink "$CURRENT")"
+fi
 
-                    echo "Activating frontend release..."
+echo "Activating frontend release..."
 
-                    rm -f "$TEMP_LINK"
-                    ln -s "$RELEASE_DIR" "$TEMP_LINK"
-                    mv -Tf "$TEMP_LINK" "$CURRENT"
+rm -f "$TEMP_LINK"
+ln -s "$RELEASE_DIR" "$TEMP_LINK"
+mv -Tf "$TEMP_LINK" "$CURRENT"
 
-                    if [ ! -s "$CURRENT/index.html" ]; then
+if [ ! -s "$CURRENT/index.html" ]; then
 
-                        echo "Frontend deployment verification failed!"
+    echo "Frontend deployment verification failed!"
 
-                        if [ -n "$OLD_TARGET" ]; then
-                            ln -s "$OLD_TARGET" "$TEMP_LINK"
-                            mv -Tf "$TEMP_LINK" "$CURRENT"
-                        else
-                            rm -f "$CURRENT"
-                        fi
+    if [ -n "$OLD_TARGET" ]; then
+        ln -s "$OLD_TARGET" "$TEMP_LINK"
+        mv -Tf "$TEMP_LINK" "$CURRENT"
+    else
+        rm -f "$CURRENT"
+    fi
 
-                        exit 1
-                    fi
+    exit 1
+fi
 
-                    rm -f "/tmp/$ARCHIVE"
+rm -f "/tmp/$ARCHIVE"
 
-                    echo "Frontend deployment successful!"
-                    echo "Active release: $RELEASE_DIR"
+echo "Frontend deployment successful!"
+echo "Active release: $RELEASE_DIR"
 
-                    REMOTE
+REMOTE
 
                     rm -f "$ARCHIVE"
                 '''
