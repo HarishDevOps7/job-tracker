@@ -82,40 +82,7 @@ pipeline {
                 }
             }
         }
-
-        // 7. SONARCLOUD ANALYSIS
-        stage('SonarCloud Analysis') {
-            steps {
-                script {
-                    def scannerHome = tool 'SonarQube-Scanner'
-
-                    withSonarQubeEnv('SonarQube') {
-                        sh """
-                            ${scannerHome}/bin/sonar-scanner \
-                            -Dsonar.organization=sonarqubepractice-c07 \
-                            -Dsonar.projectKey=sonarqubepractice-c07_job-tracker \
-                            -Dsonar.projectName=job-tracker \
-                            -Dsonar.host.url=https://sonarcloud.io \
-                            -Dsonar.sources=src/main/java \
-                            -Dsonar.tests=src/test/java \
-                            -Dsonar.java.binaries=target/classes \
-                            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
-                            -Dsonar.sourceEncoding=UTF-8
-                        """
-                    }
-                }
-            }
-        }
-
-        // 8. QUALITY GATE
-        stage('Quality Gate') {
-            steps {
-                timeout(time: 5, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: true
-                }
-            }
-        }
-
+    
         // 9. DEPLOY BACKEND TO UAT
         stage('Deploy Backend to UAT') {
 

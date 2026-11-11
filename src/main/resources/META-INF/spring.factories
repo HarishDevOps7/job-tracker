@@ -1,4 +1,0 @@
-org.springframework.boot.context.config.ConfigDataLocationResolver=\
-com.harish.job_tracker.config.AwsSecretsConfigDataLocationResolver
-org.springframework.boot.context.config.ConfigDataLoader=\
-com.harish.job_tracker.config.AwsSecretsConfigDataLoader
