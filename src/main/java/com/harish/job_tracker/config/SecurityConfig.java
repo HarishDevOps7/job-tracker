@@ -254,14 +254,9 @@ public SecurityFilterChain securityFilterChain(
                 .userAuthoritiesMapper(oauth2AuthoritiesMapper)
         )
 
-        .defaultSuccessUrl(
-                "http://localhost:5173/dashboard",
-                true
-        )
+        .defaultSuccessUrl("/dashboard", true)
 
-        .failureUrl(
-                "http://localhost:5173/login?oauth2Error=true"
-        )
+        .failureUrl("/login?oauth2Error=true")
 )
             // HTTP Basic for API/Postman testing
             .httpBasic(Customizer.withDefaults())
