@@ -137,8 +137,7 @@ export const authService = {
   },
 
   // Google OAuth
-  googleLogin() {
-    window.location.href =
-      'http://localhost:8081/oauth2/authorization/google'
-  },
+ googleLogin() {
+    window.location.href = "/oauth2/authorization/google";
+}
 }
