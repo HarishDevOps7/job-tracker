@@ -152,7 +152,7 @@ HEALTHY=false
 for i in $(seq 1 60); do
 
     if curl -fsS \
-        http://localhost:8081/ \
+        http://localhost:8082/ \
         > /dev/null; then
 
         HEALTHY=true
