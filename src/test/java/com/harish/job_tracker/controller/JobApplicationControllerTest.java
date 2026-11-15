@@ -2,7 +2,8 @@
 package com.harish.job_tracker.controller;
 
 import com.harish.job_tracker.dto.CreateJobRequest;
-import com.harish.job_tracker.entity.JobApplication;
+import com.harish.job_tracker.dto.JobApplicationResponse;
+import com.harish.job_tracker.entity.ApplicationStatus;
 import com.harish.job_tracker.service.JobApplicationService;
 
 import org.junit.jupiter.api.Test;
@@ -33,7 +34,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @Import(TestMailConfiguration.class)
-
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
@@ -59,12 +59,17 @@ class JobApplicationControllerTest {
         );
     }
 
-    // Sample response
-    private JobApplication createResponse() {
-        JobApplication job = new JobApplication();
-        job.setCompanyName("TCS");
-        job.setJobTitle("Java Developer");
-        return job;
+    // Sample DTO response
+    private JobApplicationResponse createResponse() {
+        return new JobApplicationResponse(
+                1L,
+                "TCS",
+                "Java Developer",
+                "LinkedIn",
+                "https://example.com/job",
+                LocalDate.now(),
+                ApplicationStatus.APPLIED
+        );
     }
 
     // Test 1: Create job application
@@ -81,7 +86,9 @@ class JobApplicationControllerTest {
                         .content(objectMapper.writeValueAsString(createRequest())))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.companyName").value("TCS"))
-                .andExpect(jsonPath("$.jobTitle").value("Java Developer"));
+                .andExpect(jsonPath("$.jobTitle").value("Java Developer"))
+                .andExpect(jsonPath("$.status").value("APPLIED"))
+                .andExpect(jsonPath("$.user").doesNotExist());
 
         verify(jobApplicationService, times(1))
                 .create(any(CreateJobRequest.class));
@@ -98,7 +105,8 @@ class JobApplicationControllerTest {
                         .with(user("testuser").roles("USER")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
-                .andExpect(jsonPath("$[0].companyName").value("TCS"));
+                .andExpect(jsonPath("$[0].companyName").value("TCS"))
+                .andExpect(jsonPath("$[0].user").doesNotExist());
 
         verify(jobApplicationService, times(1)).findAll();
     }
@@ -114,7 +122,8 @@ class JobApplicationControllerTest {
                         .with(user("testuser").roles("USER")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.companyName").value("TCS"))
-                .andExpect(jsonPath("$.jobTitle").value("Java Developer"));
+                .andExpect(jsonPath("$.jobTitle").value("Java Developer"))
+                .andExpect(jsonPath("$.user").doesNotExist());
 
         verify(jobApplicationService).findById(1L);
     }
@@ -134,7 +143,8 @@ class JobApplicationControllerTest {
                         .content(objectMapper.writeValueAsString(createRequest())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.companyName").value("TCS"))
-                .andExpect(jsonPath("$.jobTitle").value("Java Developer"));
+                .andExpect(jsonPath("$.jobTitle").value("Java Developer"))
+                .andExpect(jsonPath("$.user").doesNotExist());
 
         verify(jobApplicationService)
                 .update(eq(1L), any(CreateJobRequest.class));

@@ -1,0 +1,191 @@
+/* Scoped FullCalendar styling for the Interview Calendar page. */
+.interview-calendar-page .interview-fullcalendar {
+  --fc-border-color: #e2e8f0;
+  --fc-page-bg-color: #ffffff;
+  --fc-neutral-bg-color: #f8fafc;
+  --fc-today-bg-color: #eef2ff;
+  --fc-now-indicator-color: #ef4444;
+  color: #0f172a;
+  font-family: inherit;
+  font-size: 0.875rem;
+}
+
+.interview-calendar-page .interview-fullcalendar .fc-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.interview-calendar-page .interview-fullcalendar .fc-toolbar-title {
+  color: #0f172a;
+  font-size: 1.2rem;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.interview-calendar-page .interview-fullcalendar .fc-button {
+  min-height: 2.25rem;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 0.5rem !important;
+  background: #ffffff !important;
+  color: #334155 !important;
+  padding: 0.45rem 0.75rem !important;
+  font-size: 0.8rem !important;
+  font-weight: 600 !important;
+  line-height: 1.2 !important;
+  text-transform: capitalize;
+  box-shadow: none !important;
+  opacity: 1 !important;
+}
+
+.interview-calendar-page .interview-fullcalendar .fc-button:hover {
+  border-color: #a5b4fc !important;
+  background: #eef2ff !important;
+  color: #4338ca !important;
+}
+
+.interview-calendar-page .interview-fullcalendar .fc-button:focus,
+.interview-calendar-page .interview-fullcalendar .fc-button:focus-visible {
+  outline: 2px solid #a5b4fc !important;
+  outline-offset: 2px;
+  box-shadow: none !important;
+}
+
+.interview-calendar-page .interview-fullcalendar .fc-button-primary:not(:disabled).fc-button-active,
+.interview-calendar-page .interview-fullcalendar .fc-button-primary:not(:disabled):active {
+  border-color: #4f46e5 !important;
+  background: #4f46e5 !important;
+  color: #ffffff !important;
+}
+
+.interview-calendar-page .interview-fullcalendar .fc-button-group {
+  display: inline-flex;
+  gap: 0.35rem;
+}
+
+.interview-calendar-page .interview-fullcalendar .fc-button-group > .fc-button {
+  border-radius: 0.5rem !important;
+  margin: 0 !important;
+}
+
+.interview-calendar-page .interview-fullcalendar .fc-scrollgrid {
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+}
+
+.interview-calendar-page .interview-fullcalendar .fc-scrollgrid,
+.interview-calendar-page .interview-fullcalendar .fc-scrollgrid table,
+.interview-calendar-page .interview-fullcalendar .fc-scrollgrid th,
+.interview-calendar-page .interview-fullcalendar .fc-scrollgrid td {
+  border-color: #cbd5e1 !important;
+}
+
+.interview-calendar-page .interview-fullcalendar .fc-daygrid-day {
+  background: #ffffff;
+}
+
+.interview-calendar-page .interview-fullcalendar .fc-col-header-cell {
+  background: #f8fafc;
+}
+
+.interview-calendar-page .interview-fullcalendar .fc-col-header-cell-cushion {
+  display: inline-block;
+  padding: 0.75rem 0.25rem;
+  color: #475569;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.interview-calendar-page .interview-fullcalendar .fc-daygrid-day-number {
+  padding: 0.55rem;
+  color: #334155;
+  font-size: 0.8rem;
+  text-decoration: none;
+}
+
+.interview-calendar-page .interview-fullcalendar .fc-daygrid-day-frame {
+  min-height: 6.5rem;
+}
+
+.interview-calendar-page .interview-fullcalendar .fc-day-today .fc-daygrid-day-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.8rem;
+  min-height: 1.8rem;
+  margin: 0.2rem;
+  border-radius: 9999px;
+  background: #4f46e5;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.interview-calendar-page .interview-fullcalendar .fc-daygrid-event {
+  margin: 0.15rem 0.3rem;
+  border: 0;
+  border-radius: 0.35rem;
+  padding: 0.15rem 0.3rem;
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+
+.interview-calendar-page .interview-fullcalendar .fc-event-title,
+.interview-calendar-page .interview-fullcalendar .fc-event-time {
+  font-weight: 600;
+}
+
+.interview-calendar-page .interview-fullcalendar .fc-daygrid-more-link {
+  padding: 0.15rem 0.35rem;
+  color: #4f46e5;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.interview-calendar-page .interview-fullcalendar .fc-timegrid-slot {
+  height: 2.5rem;
+}
+
+.interview-calendar-page .interview-fullcalendar .fc-timegrid-axis-cushion,
+.interview-calendar-page .interview-fullcalendar .fc-timegrid-slot-label-cushion {
+  color: #64748b;
+  font-size: 0.72rem;
+}
+
+@media (max-width: 640px) {
+  .interview-calendar-page .interview-fullcalendar .fc-toolbar {
+    align-items: flex-start;
+  }
+
+  .interview-calendar-page .interview-fullcalendar .fc-toolbar-chunk {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    max-width: 100%;
+  }
+
+  .interview-calendar-page .interview-fullcalendar .fc-toolbar-title {
+    font-size: 1rem;
+  }
+
+  .interview-calendar-page .interview-fullcalendar .fc-button {
+    min-height: 2rem;
+    padding: 0.35rem 0.5rem !important;
+    font-size: 0.7rem !important;
+  }
+
+  .interview-calendar-page .interview-fullcalendar .fc-daygrid-day-frame {
+    min-height: 4.5rem;
+  }
+
+  .interview-calendar-page .interview-fullcalendar .fc-daygrid-day-number {
+    padding: 0.3rem;
+    font-size: 0.7rem;
+  }
+}

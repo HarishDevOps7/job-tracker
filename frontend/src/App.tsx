@@ -9,43 +9,27 @@ import ResetPasswordPage from './pages/auth/ResetPasswordPage'
 
 import AdminDashboard from './pages/admin/AdminDashboard'
 import UserDashboard from './pages/user/UserDashboard'
+import AddApplicationPage from './pages/user/AddApplicationPage'
+import ApplicationsPage from './pages/user/ApplicationsPage'
+import InterviewCalendar from './pages/user/InterviewCalendar'
+
 import ProtectedRoute from './components/ProtectedRoute'
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
+
         <Route path="/" element={<Navigate to="/login" replace />} />
 
+        {/* Authentication Routes */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/verify-reset-otp" element={<VerifyResetOtpPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
 
-        {/* Forgot Password Flow */}
-        <Route
-          path="/forgot-password"
-          element={<ForgotPasswordPage />}
-        />
-
-        <Route
-          path="/verify-reset-otp"
-          element={<VerifyResetOtpPage />}
-        />
-
-        <Route
-          path="/reset-password"
-          element={<ResetPasswordPage />}
-        />
-
-        {/* Protected Routes */}
-        <Route
-          path="/admin/dashboard"
-          element={
-            <ProtectedRoute allowedRole="ADMIN">
-              <AdminDashboard />
-            </ProtectedRoute>
-          }
-        />
-
+        {/* User Protected Routes */}
         <Route
           path="/dashboard"
           element={
@@ -55,7 +39,46 @@ function App() {
           }
         />
 
+        <Route
+          path="/applications"
+          element={
+            <ProtectedRoute allowedRole="USER">
+              <ApplicationsPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/applications/new"
+          element={
+            <ProtectedRoute allowedRole="USER">
+              <AddApplicationPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/interviews"
+          element={
+            <ProtectedRoute allowedRole="USER">
+              <InterviewCalendar />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Admin Protected Route */}
+        <Route
+          path="/admin/dashboard"
+          element={
+            <ProtectedRoute allowedRole="ADMIN">
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Fallback */}
         <Route path="*" element={<Navigate to="/login" replace />} />
+
       </Routes>
     </BrowserRouter>
   )
