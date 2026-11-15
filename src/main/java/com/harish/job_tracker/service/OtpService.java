@@ -539,7 +539,7 @@ public boolean verifyMobileLoginOtp(
                     otp);
         } else if ("MSG91".equalsIgnoreCase(smsMode)) {
             smsService.sendOtp(mobile);
-            challenge.setOtpHash(null);
+            challenge.setOtpHash("MSG91_MANAGED");
         } else {
             throw new IllegalStateException(
                     "Unsupported SMS mode: " + smsMode
