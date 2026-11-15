@@ -1,1 +1,99 @@
+
 @import "tailwindcss";
+@import "@fullcalendar/react/skeleton.css";
+
+/* FullCalendar base styling */
+
+.fc {
+  display: block;
+  width: 100%;
+  font-family: Arial, sans-serif;
+  color: #1e293b;
+}
+
+.fc table {
+  width: 100%;
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+.fc th,
+.fc td {
+  border: 1px solid #e2e8f0;
+}
+
+.fc .fc-toolbar {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  flex-wrap: wrap !important;
+  gap: 12px;
+}
+
+.fc .fc-toolbar-title {
+  font-size: 21px !important;
+  font-weight: 700 !important;
+}
+
+.fc .fc-button {
+  display: inline-block !important;
+  padding: 8px 13px !important;
+  margin: 0 3px !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 7px !important;
+  background: #ffffff !important;
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  text-transform: capitalize !important;
+  cursor: pointer !important;
+}
+
+.fc .fc-button:hover {
+  background: #eef2ff !important;
+  color: #4338ca !important;
+}
+
+.fc .fc-button-primary:not(:disabled).fc-button-active {
+  background: #4f46e5 !important;
+  color: #ffffff !important;
+}
+
+.fc .fc-col-header-cell {
+  background: #f8fafc;
+}
+
+.fc .fc-daygrid-day-frame {
+  min-height: 100px;
+}
+
+.fc .fc-day-today {
+  background: #eef2ff !important;
+}
+
+@media (max-width: 768px) {
+  .fc .fc-toolbar {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+  }
+
+  .fc .fc-toolbar-title {
+    font-size: 17px !important;
+  }
+
+  .fc .fc-button {
+    padding: 6px 9px !important;
+    font-size: 11px !important;
+  }
+
+  .fc .fc-daygrid-day-frame {
+    min-height: 65px;
+  }
+
+  .fc .fc-button {
+  background: red !important;
+  color: white !important;
+  border: 3px solid black !important;
+  padding: 15px !important;
+}
+}

@@ -2,8 +2,10 @@
 package com.harish.job_tracker.service;
 
 import com.harish.job_tracker.dto.CreateJobRequest;
+import com.harish.job_tracker.dto.JobApplicationResponse;
 import com.harish.job_tracker.entity.ApplicationStatus;
 import com.harish.job_tracker.entity.JobApplication;
+import com.harish.job_tracker.entity.User;
 import com.harish.job_tracker.repository.JobApplicationRepository;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -31,12 +33,15 @@ class JobApplicationServiceTest {
     @Mock
     private JobApplicationRepository repository;
 
+    @Mock
+    private CurrentUserService currentUserService;
+
     @InjectMocks
     private JobApplicationService service;
 
     private CreateJobRequest request;
-
     private JobApplication job;
+    private User user;
 
     @BeforeEach
     void setUp() {
@@ -49,34 +54,55 @@ class JobApplicationServiceTest {
                 LocalDate.of(2026, 11, 2)
         );
 
+        user = mock(User.class);
+
         job = new JobApplication();
         job.setCompanyName("TCS");
         job.setJobTitle("Java Developer");
+        job.setSource("LinkedIn");
+        job.setJobUrl("https://example.com/job");
+        job.setAppliedDate(LocalDate.of(2026, 11, 2));
+        job.setStatus(ApplicationStatus.APPLIED);
+    }
+
+    // Common authenticated user setup
+    private void mockCurrentUser() {
+
+        when(currentUserService.getCurrentUser())
+                .thenReturn(user);
+
+        // ID is needed for ownership-based repository queries.
+        // Lenient avoids unnecessary-stubbing errors in CREATE tests.
+        lenient().when(user.getId()).thenReturn(10L);
     }
 
     // Test 1: Create application successfully
     @Test
     void shouldCreateJobApplication() {
 
+        mockCurrentUser();
+
         when(repository.save(any(JobApplication.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        JobApplication result = service.create(request);
+        JobApplicationResponse result = service.create(request);
 
         assertNotNull(result);
-        assertEquals("TCS", result.getCompanyName());
-        assertEquals("Java Developer", result.getJobTitle());
-        assertEquals("LinkedIn", result.getSource());
-        assertEquals("https://example.com/job", result.getJobUrl());
-        assertEquals(LocalDate.of(2026, 11, 2), result.getAppliedDate());
-        assertEquals(ApplicationStatus.APPLIED, result.getStatus());
+        assertEquals("TCS", result.companyName());
+        assertEquals("Java Developer", result.jobTitle());
+        assertEquals("LinkedIn", result.source());
+        assertEquals("https://example.com/job", result.jobUrl());
+        assertEquals(LocalDate.of(2026, 11, 2), result.appliedDate());
+        assertEquals(ApplicationStatus.APPLIED, result.status());
 
-        verify(repository, times(1)).save(any(JobApplication.class));
+        verify(repository).save(any(JobApplication.class));
     }
 
     // Test 2: Trim company name and job title
     @Test
     void shouldTrimCompanyNameAndJobTitle() {
+
+        mockCurrentUser();
 
         CreateJobRequest trimRequest = new CreateJobRequest(
                 "  TCS  ",
@@ -89,15 +115,17 @@ class JobApplicationServiceTest {
         when(repository.save(any(JobApplication.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        JobApplication result = service.create(trimRequest);
+        JobApplicationResponse result = service.create(trimRequest);
 
-        assertEquals("TCS", result.getCompanyName());
-        assertEquals("Java Developer", result.getJobTitle());
+        assertEquals("TCS", result.companyName());
+        assertEquals("Java Developer", result.jobTitle());
     }
 
     // Test 3: Use today's date when applied date is null
     @Test
     void shouldUseCurrentDateWhenAppliedDateIsNull() {
+
+        mockCurrentUser();
 
         CreateJobRequest nullDateRequest = new CreateJobRequest(
                 "TCS",
@@ -110,46 +138,52 @@ class JobApplicationServiceTest {
         when(repository.save(any(JobApplication.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        JobApplication result = service.create(nullDateRequest);
+        JobApplicationResponse result = service.create(nullDateRequest);
 
-        assertEquals(LocalDate.now(), result.getAppliedDate());
+        assertEquals(LocalDate.now(), result.appliedDate());
     }
 
-    // Test 4: Get all applications
+    // Test 4: Get all applications for current user
     @Test
     void shouldReturnAllApplications() {
 
-        when(repository.findAll())
+        mockCurrentUser();
+
+        when(repository.findByUserId(10L))
                 .thenReturn(List.of(job));
 
-        List<JobApplication> result = service.findAll();
+        List<JobApplicationResponse> result = service.findAll();
 
         assertEquals(1, result.size());
-        assertEquals("TCS", result.get(0).getCompanyName());
+        assertEquals("TCS", result.get(0).companyName());
 
-        verify(repository, times(1)).findAll();
+        verify(repository).findByUserId(10L);
     }
 
     // Test 5: Find application by ID
     @Test
     void shouldFindApplicationById() {
 
-        when(repository.findById(1L))
+        mockCurrentUser();
+
+        when(repository.findByIdAndUserId(1L, 10L))
                 .thenReturn(Optional.of(job));
 
-        JobApplication result = service.findById(1L);
+        JobApplicationResponse result = service.findById(1L);
 
         assertNotNull(result);
-        assertEquals("TCS", result.getCompanyName());
+        assertEquals("TCS", result.companyName());
 
-        verify(repository).findById(1L);
+        verify(repository).findByIdAndUserId(1L, 10L);
     }
 
-    // Test 6: Throw exception when application is not found
+    // Test 6: Application not found
     @Test
     void shouldThrowExceptionWhenApplicationNotFound() {
 
-        when(repository.findById(100L))
+        mockCurrentUser();
+
+        when(repository.findByIdAndUserId(100L, 10L))
                 .thenReturn(Optional.empty());
 
         ResponseStatusException exception = assertThrows(
@@ -157,39 +191,39 @@ class JobApplicationServiceTest {
                 () -> service.findById(100L)
         );
 
-        assertEquals(
-                HttpStatus.NOT_FOUND,
-                exception.getStatusCode()
-        );
+        assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
 
-        verify(repository).findById(100L);
+        verify(repository).findByIdAndUserId(100L, 10L);
     }
 
     // Test 7: Update application successfully
     @Test
     void shouldUpdateJobApplication() {
 
-        when(repository.findById(1L))
+        mockCurrentUser();
+
+        when(repository.findByIdAndUserId(1L, 10L))
                 .thenReturn(Optional.of(job));
 
         when(repository.save(any(JobApplication.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        JobApplication result = service.update(1L, request);
+        JobApplicationResponse result = service.update(1L, request);
 
-        assertEquals("TCS", result.getCompanyName());
-        assertEquals("Java Developer", result.getJobTitle());
-        assertEquals("LinkedIn", result.getSource());
-        assertEquals("https://example.com/job", result.getJobUrl());
-        assertEquals(LocalDate.of(2026, 11, 2), result.getAppliedDate());
+        assertEquals("TCS", result.companyName());
+        assertEquals("Java Developer", result.jobTitle());
+        assertEquals("LinkedIn", result.source());
+        assertEquals("https://example.com/job", result.jobUrl());
+        assertEquals(LocalDate.of(2026, 11, 2), result.appliedDate());
 
-        verify(repository).findById(1L);
         verify(repository).save(job);
     }
 
     // Test 8: Preserve existing date when update date is null
     @Test
     void shouldPreserveExistingDateWhenUpdateDateIsNull() {
+
+        mockCurrentUser();
 
         LocalDate existingDate = LocalDate.of(2026, 10, 20);
         job.setAppliedDate(existingDate);
@@ -202,29 +236,31 @@ class JobApplicationServiceTest {
                 null
         );
 
-        when(repository.findById(1L))
+        when(repository.findByIdAndUserId(1L, 10L))
                 .thenReturn(Optional.of(job));
 
         when(repository.save(any(JobApplication.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        JobApplication result = service.update(1L, updateRequest);
+        JobApplicationResponse result = service.update(1L, updateRequest);
 
-        assertEquals("Infosys", result.getCompanyName());
-        assertEquals("DevOps Engineer", result.getJobTitle());
-        assertEquals(existingDate, result.getAppliedDate());
+        assertEquals("Infosys", result.companyName());
+        assertEquals("DevOps Engineer", result.jobTitle());
+        assertEquals(existingDate, result.appliedDate());
     }
 
     // Test 9: Delete application successfully
     @Test
     void shouldDeleteJobApplication() {
 
-        when(repository.findById(1L))
+        mockCurrentUser();
+
+        when(repository.findByIdAndUserId(1L, 10L))
                 .thenReturn(Optional.of(job));
 
         service.delete(1L);
 
-        verify(repository).findById(1L);
+        verify(repository).findByIdAndUserId(1L, 10L);
         verify(repository).delete(job);
     }
 
@@ -232,7 +268,9 @@ class JobApplicationServiceTest {
     @Test
     void shouldThrowExceptionWhenDeletingNonExistingApplication() {
 
-        when(repository.findById(100L))
+        mockCurrentUser();
+
+        when(repository.findByIdAndUserId(100L, 10L))
                 .thenReturn(Optional.empty());
 
         assertThrows(
@@ -240,7 +278,7 @@ class JobApplicationServiceTest {
                 () -> service.delete(100L)
         );
 
-        verify(repository).findById(100L);
+        verify(repository).findByIdAndUserId(100L, 10L);
         verify(repository, never()).delete(any(JobApplication.class));
     }
 }

@@ -176,12 +176,14 @@
 
 </plugin>
 
+
 <plugin>
     <groupId>org.owasp</groupId>
     <artifactId>dependency-check-maven</artifactId>
     <version>13.0.0</version>
 
     <configuration>
+        <nvdApiKey>${env.NVD_API_KEY}</nvdApiKey>
         <nvdApiDelay>6000</nvdApiDelay>
         <nvdMaxRetryCount>15</nvdMaxRetryCount>
     </configuration>
@@ -194,6 +196,8 @@
         </execution>
     </executions>
 </plugin>
+
+
         </plugins>
     
     </build>
